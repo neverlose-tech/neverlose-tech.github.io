@@ -1,0 +1,1377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="NEVERLOSE — advanced gaming script. Demonstration interface only: no in-game functionality.">
+<title>NEVERLOSE — Advanced gaming script</title>
+<script>document.documentElement.classList.add('js')</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Manrope:wght@400;500;600;700;800&family=Russo+One&display=swap" rel="stylesheet">
+<style>
+  /* ============ Tokens ============ */
+  :root{
+    --bg:#07080c; --surface:#0c0e14; --surface2:#11141c;
+    --border:#1a1f2c; --border2:#242b3d;
+    --text:#eef1f8; --text2:#8b93a7; --text3:#59627a;
+    --accent:#3e7bff; --accent-rgb:62,123,255;
+    --ok:#2fd08c; --warn:#f0a63a; --violet:#a78bfa; --red:#ff4d5e;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:86px;color-scheme:dark}
+  html.no-anim{scroll-behavior:auto}
+  html.no-anim *,html.no-anim *::before,html.no-anim *::after{animation:none!important;transition:none!important}
+  body{
+    background:var(--bg);color:var(--text);
+    font:400 16px/1.65 'Manrope',sans-serif;
+    overflow-x:hidden;-webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--accent);color:#fff}
+  ::-webkit-scrollbar{width:10px}
+  ::-webkit-scrollbar-track{background:#08090d}
+  ::-webkit-scrollbar-thumb{background:#1e2534;border-radius:6px;border:2px solid #08090d}
+  ::-webkit-scrollbar-thumb:hover{background:rgba(var(--accent-rgb),.55)}
+  button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+  a{color:inherit;text-decoration:none}
+  img,svg{display:block}
+  :focus-visible{outline:1px solid var(--accent);outline-offset:3px}
+  .mono{font-family:'JetBrains Mono',monospace}
+  .container{max-width:1180px;margin:0 auto;padding:0 28px}
+
+  /* film grain over everything */
+  body::after{
+    content:'';position:fixed;inset:0;z-index:120;pointer-events:none;opacity:.03;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* ============ Scroll reveal ============ */
+  .js .reveal{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .8s cubic-bezier(.22,1,.36,1)}
+  .js .reveal.in{opacity:1;transform:none}
+
+  /* ============ Buttons ============ */
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:10px;
+    font:700 13px/1 'Manrope';letter-spacing:.09em;text-transform:uppercase;
+    padding:15px 28px;border-radius:10px;white-space:nowrap;user-select:none;cursor:pointer;
+    transition:transform .25s ease,box-shadow .25s,background .25s,color .25s,border-color .25s,filter .25s;
+  }
+  .btn svg{width:15px;height:15px;stroke-width:2.2}
+  .btn-solid{background:var(--accent);color:#fff;box-shadow:0 6px 24px -8px rgba(var(--accent-rgb),.55)}
+  .btn-solid:hover{
+    transform:translateY(-2px);
+    background:color-mix(in srgb,var(--accent) 80%,#fff);
+    box-shadow:0 12px 34px -8px rgba(var(--accent-rgb),.7);
+  }
+  .btn-solid:active{transform:translateY(0) scale(.99)}
+  .btn-solid:disabled{opacity:.55;cursor:default;transform:none;box-shadow:none}
+  .btn-ghost{border:1px solid var(--border2);color:var(--text2);background:rgba(255,255,255,.015)}
+  .btn-ghost:hover{border-color:rgba(var(--accent-rgb),.7);color:var(--text);transform:translateY(-2px);box-shadow:0 8px 26px -14px rgba(var(--accent-rgb),.5)}
+  .btn-sm{padding:10px 18px;font-size:12px;border-radius:8px}
+  .btn-lg{padding:17px 32px;font-size:13.5px}
+
+  /* ============ Header ============ */
+  header{
+    position:fixed;inset:0 0 auto 0;z-index:100;
+    transition:background .35s,border-color .35s,backdrop-filter .35s;
+    border-bottom:1px solid transparent;
+  }
+  header.scrolled{background:rgba(7,8,12,.8);backdrop-filter:blur(14px);border-color:var(--border)}
+  .header-in{display:flex;align-items:center;justify-content:space-between;height:68px}
+  .logo{display:flex;align-items:center;gap:11px}
+  .logo svg{width:30px;height:30px}
+  .logo b{font:400 18px 'Russo One';letter-spacing:.04em}
+  .logo i{font:700 8px 'JetBrains Mono';color:var(--accent);font-style:normal;border:1px solid rgba(var(--accent-rgb),.5);border-radius:4px;padding:2px 5px;letter-spacing:.12em;margin-top:2px}
+  .nav{display:flex;gap:32px}
+  .nav a{position:relative;font:700 12px 'Manrope';letter-spacing:.12em;color:var(--text2);padding:6px 0;transition:color .25s;text-transform:uppercase}
+  .nav a::after{content:'';position:absolute;left:0;bottom:0;width:16px;height:2px;background:var(--accent);box-shadow:0 0 8px rgba(var(--accent-rgb),.8);transform:scaleX(0);transform-origin:left;transition:transform .3s ease}
+  .nav a:hover,.nav a.active{color:var(--text)}
+  .nav a:hover::after,.nav a.active::after{transform:scaleX(1)}
+  .h-actions{display:flex;align-items:center;gap:14px}
+
+  .burger{display:none;flex-direction:column;justify-content:center;gap:6px;width:40px;height:40px;padding:8px}
+  .burger span{display:block;height:2px;background:var(--text);transition:transform .3s,opacity .3s}
+  .burger.open span:first-child{transform:translateY(4px) rotate(45deg)}
+  .burger.open span:last-child{transform:translateY(-4px) rotate(-45deg)}
+
+  .m-nav{
+    position:fixed;inset:68px 0 0 0;z-index:99;background:rgba(7,8,12,.97);
+    display:flex;flex-direction:column;justify-content:center;gap:6px;padding:40px 32px;
+    opacity:0;visibility:hidden;transition:opacity .35s,visibility .35s;
+  }
+  .m-nav.open{opacity:1;visibility:visible}
+  .m-nav a{
+    font:400 28px 'Russo One';padding:14px 0;color:var(--text2);
+    border-bottom:1px solid var(--border);
+    opacity:0;transform:translateY(14px);transition:opacity .4s ease,transform .4s ease,color .25s;
+  }
+  .m-nav.open a{opacity:1;transform:none}
+  .m-nav a:hover{color:var(--text)}
+  .m-nav a em{font:500 11px 'JetBrains Mono';color:var(--accent);font-style:normal;margin-right:16px;vertical-align:middle}
+
+  /* ============ Hero ============ */
+  .hero{position:relative;min-height:100svh;display:flex;align-items:center;overflow:hidden;cursor:crosshair;padding:120px 0 110px}
+  .hero::before{ /* blueprint grid */
+    content:'';position:absolute;inset:0;z-index:1;
+    background-image:linear-gradient(rgba(139,147,167,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(139,147,167,.045) 1px,transparent 1px);
+    background-size:44px 44px;
+    -webkit-mask-image:radial-gradient(ellipse 90% 75% at 50% 42%,#000 30%,transparent 78%);
+            mask-image:radial-gradient(ellipse 90% 75% at 50% 42%,#000 30%,transparent 78%);
+  }
+  #heroCanvas{position:absolute;inset:0;width:100%;height:100%;z-index:2}
+  .orb{position:absolute;z-index:1;border-radius:50%;background:var(--accent);filter:blur(130px);opacity:.14;pointer-events:none;animation:orbFloat 13s ease-in-out infinite alternate}
+  .orb.a{width:440px;height:440px;top:-14%;left:-10%}
+  .orb.b{width:360px;height:360px;bottom:-20%;right:-6%;opacity:.1;animation-delay:-6s}
+  @keyframes orbFloat{to{transform:translate(40px,26px)}}
+  .hero-mark{
+    position:absolute;z-index:1;right:-4%;bottom:-8%;pointer-events:none;user-select:none;
+    font:400 clamp(180px,30vw,420px)/1 'Russo One';
+    color:rgba(238,241,248,.028);-webkit-text-stroke:1px rgba(238,241,248,.055);
+  }
+  .hero-grid{position:relative;z-index:3;display:grid;grid-template-columns:1.08fr .92fr;gap:44px;align-items:center;width:100%}
+
+  .hero-badge{
+    display:inline-flex;align-items:center;gap:9px;
+    font:500 10.5px 'JetBrains Mono';letter-spacing:.16em;color:var(--text2);
+    border:1px solid var(--border2);padding:8px 14px;background:rgba(7,8,12,.6);cursor:default;
+  }
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 10px rgba(47,208,140,.9);animation:pulse 2s infinite;flex:none}
+  .dot.blue{background:var(--accent);box-shadow:0 0 10px rgba(var(--accent-rgb),.9)}
+  @keyframes pulse{50%{opacity:.45}}
+  .hero h1{font:400 clamp(2.4rem,7.2vw,5.2rem)/1.04 'Russo One';letter-spacing:.01em;margin:26px 0 14px;text-transform:uppercase;cursor:default}
+  .hero h1 .grad{
+    background:var(--accent);
+    background:linear-gradient(100deg,var(--accent),color-mix(in srgb,var(--accent) 35%,#7fe3ff));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 0 26px rgba(var(--accent-rgb),.35));
+  }
+  .hero-sub{font:500 13px 'JetBrains Mono';letter-spacing:.34em;color:var(--accent);text-transform:uppercase}
+  .hero-desc{max-width:500px;margin:20px 0 0;color:var(--text2);font-size:15.5px}
+  .hero-cta{display:flex;gap:14px;margin-top:36px;flex-wrap:wrap}
+
+  .hero-meta{
+    position:absolute;left:0;right:0;bottom:28px;z-index:3;
+    display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+    font:500 10px 'JetBrains Mono';letter-spacing:.16em;color:var(--text3);user-select:none;
+  }
+  .hero-meta .hm{display:inline-flex;align-items:center;gap:8px}
+  .hero-meta .sep{flex:1;height:1px;background:var(--border)}
+
+  /* ============ Demo menu (in-game mock) ============ */
+  .menu-win{
+    position:relative;width:min(420px,100%);justify-self:end;
+    background:rgba(12,14,20,.92);backdrop-filter:blur(14px);
+    border:1px solid rgba(255,255,255,.09);border-radius:14px;overflow:hidden;
+    box-shadow:0 40px 90px -30px rgba(0,0,0,.75),0 0 70px -30px rgba(var(--accent-rgb),.5);
+    cursor:default;
+  }
+  .menu-win.dragging{box-shadow:0 60px 110px -30px rgba(0,0,0,.85),0 0 90px -26px rgba(var(--accent-rgb),.65)}
+  .mw-bar{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border);cursor:grab;user-select:none;touch-action:none}
+  .menu-win.dragging .mw-bar{cursor:grabbing}
+  .mw-dots{display:flex;gap:5px}
+  .mw-dots i{width:8px;height:8px;border-radius:50%;background:#242b3d}
+  .mw-dots i:first-child{background:var(--accent);box-shadow:0 0 8px rgba(var(--accent-rgb),.7)}
+  .mw-title{font-size:11px;letter-spacing:.14em;color:var(--text3);margin-right:auto}
+  .mw-b{width:24px;height:22px;display:grid;place-items:center;color:var(--text3);border-radius:5px;font:500 11px 'JetBrains Mono';transition:.2s}
+  .mw-b:hover{background:rgba(255,255,255,.07);color:var(--text)}
+  .mw-bx:hover{background:rgba(255,77,94,.15);color:var(--red)}
+  .mw-tabs{display:flex;border-bottom:1px solid var(--border);padding:0 8px;background:rgba(255,255,255,.015)}
+  .mw-tabs button{flex:1;padding:12px 4px;font:700 10.5px 'Manrope';letter-spacing:.12em;text-transform:uppercase;color:var(--text3);position:relative;transition:color .25s}
+  .mw-tabs button::after{content:'';position:absolute;left:20%;right:20%;bottom:-1px;height:2px;background:var(--accent);box-shadow:0 0 10px rgba(var(--accent-rgb),.8);transform:scaleX(0);transition:transform .3s}
+  .mw-tabs button.active{color:var(--accent)}
+  .mw-tabs button.active::after{transform:scaleX(1)}
+  .mw-body{padding:6px 16px 12px;max-height:360px;overflow:hidden;transition:max-height .35s ease,opacity .3s,padding .35s ease}
+  .menu-win.min .mw-body{max-height:0;opacity:0;padding-top:0;padding-bottom:0}
+  .mw-pane{display:none}
+  .mw-pane.active{display:block;animation:paneIn .3s ease}
+  @keyframes paneIn{from{opacity:0;transform:translateY(6px)}}
+  .mw-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+  .mw-row:last-child{border-bottom:0}
+  .mw-row>span:first-child{font-size:13px;color:var(--text2)}
+  .mw-ctl{display:flex;align-items:center;gap:10px}
+  .mw-ctl b{font:500 11px 'JetBrains Mono';color:var(--text);min-width:36px;text-align:right}
+  .seg{display:flex;border:1px solid var(--border2);border-radius:8px;overflow:hidden}
+  .seg button{padding:6px 11px;font:600 11px 'Manrope';color:var(--text3);transition:.25s}
+  .seg button.active{background:rgba(var(--accent-rgb),.16);color:var(--accent)}
+  .mw-foot{display:flex;justify-content:space-between;padding:10px 16px;border-top:1px solid var(--border);font-size:9.5px;letter-spacing:.14em;color:var(--text3)}
+
+  /* toggle */
+  .sw{position:relative;flex:none}
+  .sw input{position:absolute;opacity:0;inset:0;cursor:pointer}
+  .sw i{display:block;width:36px;height:19px;background:#1c2230;border:1px solid var(--border2);border-radius:20px;position:relative;transition:background .25s,border-color .25s}
+  .sw i::after{content:'';position:absolute;top:2.5px;left:3px;width:12px;height:12px;border-radius:50%;background:#6b7590;transition:transform .25s cubic-bezier(.22,1,.36,1),background .25s}
+  .sw input:checked + i{background:rgba(var(--accent-rgb),.16);border-color:rgba(var(--accent-rgb),.55)}
+  .sw input:checked + i::after{transform:translateX(17px);background:var(--accent);box-shadow:0 0 8px rgba(var(--accent-rgb),.7)}
+  .sw input:disabled + i{opacity:.45}
+
+  /* slider */
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;width:120px;height:4px;border-radius:4px;outline:none;
+    background:linear-gradient(to right,var(--accent) 50%,#202636 50%);cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#fff;
+    border:3px solid var(--accent);box-shadow:0 0 10px rgba(var(--accent-rgb),.6);
+  }
+  input[type=range]::-moz-range-thumb{width:8px;height:8px;border-radius:50%;background:#fff;border:3px solid var(--accent);box-shadow:0 0 10px rgba(var(--accent-rgb),.6)}
+
+  /* mini ESP in menu */
+  .esp-mini-wrap{margin:12px 0 6px;height:96px;border:1px solid var(--border);border-radius:8px;position:relative;overflow:hidden;background:#06070b;background-image:linear-gradient(rgba(139,147,167,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(139,147,167,.05) 1px,transparent 1px);background-size:22px 22px}
+  .esp-mini{position:absolute;left:34%;top:22%;width:30%;height:56%;border:1px solid var(--accent);box-shadow:0 0 12px -4px rgba(var(--accent-rgb),.7);transition:opacity .25s,box-shadow .3s}
+  .esp-mini.no-box{opacity:0}
+  .esp-mini.glow{box-shadow:0 0 20px rgba(var(--accent-rgb),.85)}
+  .etag{position:absolute;top:-16px;left:-1px;font-size:8px;letter-spacing:.08em;color:var(--accent);background:rgba(var(--accent-rgb),.15);padding:1px 5px}
+  .hbar{position:absolute;left:-6px;bottom:-1px;width:3px;height:72%;background:var(--ok);transition:opacity .25s}
+  .no-hp .hbar{opacity:0}
+
+  /* skins */
+  .mw-skinrow{display:flex;gap:9px;padding:12px 0;flex-wrap:wrap}
+  .sw-chip{width:26px;height:26px;border-radius:8px;background:var(--c);border:2px solid transparent;transition:transform .25s,border-color .25s,box-shadow .25s}
+  .sw-chip:hover{transform:scale(1.12)}
+  .sw-chip.active{border-color:#eef1f8;box-shadow:0 0 12px rgba(255,255,255,.18)}
+  .acc-chip{width:20px;height:20px;border-radius:50%;background:var(--c);border:2px solid transparent;transition:transform .25s,border-color .25s}
+  .acc-chip:hover{transform:scale(1.15)}
+  .acc-chip.active{border-color:#eef1f8;box-shadow:0 0 10px rgba(255,255,255,.2)}
+  .mw-skinview{display:flex;align-items:center;gap:16px;padding:14px 16px;border:1px dashed var(--border2);border-radius:10px;margin-bottom:8px}
+  #skinGun{width:96px;height:auto}
+  #skinName{font:500 12px 'JetBrains Mono';color:var(--text2);letter-spacing:.06em}
+  .kbd{font:500 10px 'JetBrains Mono';border:1px solid var(--border2);border-bottom-width:2px;border-radius:5px;padding:3px 8px;color:var(--text2);letter-spacing:.1em}
+
+  /* ============ Stats strip ============ */
+  .stats{border-block:1px solid var(--border);background:var(--surface)}
+  .stats-in{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:26px 0;text-align:center}
+  .stat b{font:400 25px 'Russo One';color:var(--text);letter-spacing:.02em}
+  .stat span{display:block;font:500 9.5px 'JetBrains Mono';letter-spacing:.16em;color:var(--text3);margin-top:5px;text-transform:uppercase}
+
+  /* ============ Ticker ============ */
+  .ticker{border-bottom:1px solid var(--border);overflow:hidden;padding:14px 0;user-select:none}
+  .ticker-track{display:flex;width:max-content;animation:marq 34s linear infinite}
+  .ticker:hover .ticker-track{animation-play-state:paused}
+  .ticker-set{display:flex;align-items:center;gap:32px;padding-right:32px;font:500 10.5px 'JetBrains Mono';letter-spacing:.18em;color:var(--text3);white-space:nowrap}
+  .ticker-set i{color:var(--accent);font-style:normal}
+  @keyframes marq{to{transform:translateX(-50%)}}
+
+  /* ============ Sections ============ */
+  section{padding:110px 0;border-top:1px solid var(--border)}
+  .sec-head{display:flex;justify-content:space-between;align-items:flex-end;gap:32px;margin-bottom:50px;flex-wrap:wrap}
+  .kicker{font:500 11.5px 'JetBrains Mono';letter-spacing:.2em;color:var(--accent);margin-bottom:12px}
+  .sec-head h2{font:400 clamp(1.7rem,3.6vw,2.5rem)/1.1 'Russo One';text-transform:uppercase;letter-spacing:.02em}
+  .sec-head p{color:var(--text2);max-width:420px;font-size:14px}
+
+  /* ============ Features ============ */
+  .fgrid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+  .f-7{grid-column:span 7}.f-5{grid-column:span 5}.f-4{grid-column:span 4}.f-12{grid-column:span 12}
+  .fcard{
+    position:relative;background:var(--surface);border:1px solid var(--border);border-radius:16px;
+    padding:24px;display:flex;flex-direction:column;gap:14px;
+    transition:transform .35s cubic-bezier(.22,1,.36,1),border-color .35s,box-shadow .35s;
+  }
+  .fcard:hover{
+    transform:translateY(-5px);border-color:rgba(var(--accent-rgb),.55);
+    box-shadow:0 0 0 1px rgba(var(--accent-rgb),.12),0 26px 60px -22px rgba(var(--accent-rgb),.35);
+  }
+  .fcard:hover h3{color:var(--text)}
+  .fcard-top{display:flex;align-items:center;gap:13px}
+  .f-ico{width:42px;height:42px;flex:none;border-radius:12px;background:rgba(var(--accent-rgb),.1);border:1px solid rgba(var(--accent-rgb),.28);display:grid;place-items:center;color:var(--accent);transition:box-shadow .3s}
+  .fcard:hover .f-ico{box-shadow:0 0 18px -2px rgba(var(--accent-rgb),.5)}
+  .f-ico svg{width:20px;height:20px}
+  .fcard h3{font:400 16.5px 'Russo One';letter-spacing:.02em;color:var(--text2);transition:color .3s}
+  .fcard>p{font-size:13.5px;color:var(--text2);line-height:1.6}
+  .f-tag{position:absolute;top:20px;right:20px;font:500 9px 'JetBrains Mono';letter-spacing:.18em;color:var(--text3)}
+  .f-demo{margin-top:auto;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#06070b}
+
+  /* JS API terminal */
+  .term-head{display:flex;align-items:center;gap:9px;padding:10px 14px;border-bottom:1px solid var(--border);font:500 10px 'JetBrains Mono';letter-spacing:.14em;color:var(--text3)}
+  .term-head .dot{width:6px;height:6px;box-shadow:0 0 8px rgba(var(--accent-rgb),.8)}
+  .term-body{padding:14px 16px;font:400 12.5px/1.75 'JetBrains Mono';min-height:262px;white-space:pre-wrap;word-break:break-word}
+  .tl-c{color:var(--text3)} .tl-k{color:var(--accent)} .tl-s{color:#6fd3ff}
+  .tl-f{color:var(--text);font-weight:500} .tl-p{color:#8b93a7} .tl-o{color:var(--ok)}
+  .caret{display:inline-block;width:7px;height:14px;background:var(--accent);vertical-align:-2px;animation:blink 1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+
+  /* ESP preview */
+  .esp-scene{position:relative;height:230px;background-image:linear-gradient(rgba(139,147,167,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(139,147,167,.05) 1px,transparent 1px);background-size:26px 26px}
+  .esp-t{position:absolute;border:1px solid var(--accent);box-shadow:0 0 14px -4px rgba(var(--accent-rgb),.6)}
+  .esp-t.e1{left:18%;top:26%;width:17%;height:48%;animation:bobA 5s ease-in-out infinite alternate}
+  .esp-t.e2{right:15%;top:34%;width:15%;height:40%;animation:bobB 6.5s ease-in-out infinite alternate}
+  @keyframes bobA{from{transform:translateY(-5px)}to{transform:translateY(6px)}}
+  @keyframes bobB{from{transform:translateY(4px)}to{transform:translateY(-6px)}}
+  .esp-t .tag{position:absolute;top:-18px;left:-1px;font:500 8px 'JetBrains Mono';letter-spacing:.08em;color:var(--accent);background:rgba(var(--accent-rgb),.16);padding:1px 5px;white-space:nowrap}
+  .esp-t .hp{position:absolute;left:-5px;bottom:-1px;width:3px;background:var(--ok)}
+  .esp-t .hp.low{background:var(--warn)}
+  .esp-t .hpv{position:absolute;bottom:-17px;right:0;font:500 8px 'JetBrains Mono';letter-spacing:.06em}
+  .scan{position:absolute;left:0;right:0;top:0;height:2px;opacity:.55;background:linear-gradient(90deg,transparent,rgba(var(--accent-rgb),.5),transparent);animation:scanY 4.5s linear infinite}
+  @keyframes scanY{from{top:-2px}to{top:100%}}
+
+  /* Aimbot FOV demo */
+  .aim-demo{position:relative;height:230px}
+  .aim-center{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);width:132px;height:132px}
+  .fov-ring{position:absolute;inset:14px;border:1px solid rgba(var(--accent-rgb),.55);border-radius:50%;animation:fovPulse 7s ease-in-out infinite}
+  @keyframes fovPulse{0%,68%,100%{box-shadow:none;border-color:rgba(var(--accent-rgb),.55)}74%,84%{box-shadow:0 0 26px rgba(var(--accent-rgb),.55);border-color:var(--accent)}}
+  .aim-cross{position:absolute;left:50%;top:50%;width:16px;height:16px;transform:translate(-50%,-50%)}
+  .aim-cross::before{content:'';position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(238,241,248,.75)}
+  .aim-cross::after{content:'';position:absolute;top:50%;left:0;right:0;height:1px;background:rgba(238,241,248,.75)}
+  .orbit{position:absolute;inset:22px;animation:spin 7s linear infinite}
+  .orbit i{position:absolute;top:-4px;left:50%;width:8px;height:8px;margin-left:-4px;border-radius:50%;background:#59627a;animation:tgtGlow 7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes tgtGlow{0%,62%,92%,100%{background:#59627a;box-shadow:none}70%,84%{background:var(--accent);box-shadow:0 0 12px rgba(var(--accent-rgb),.9)}}
+  .aim-status{position:absolute;bottom:12px;left:0;right:0;text-align:center;font:500 10px 'JetBrains Mono';letter-spacing:.2em}
+  .aim-status .s1{color:var(--text3);animation:stA 7s linear infinite}
+  .aim-status .s2{position:absolute;left:0;right:0;color:var(--accent);opacity:0;animation:stB 7s linear infinite}
+  @keyframes stA{0%,50%{opacity:1}60%,100%{opacity:0}}
+  @keyframes stB{0%,50%{opacity:0}60%,82%{opacity:1}92%,100%{opacity:0}}
+
+  /* Performance */
+  .perf-row{display:flex;align-items:baseline;gap:7px;font:500 11px 'JetBrains Mono';letter-spacing:.12em;color:var(--text3);padding:2px 2px 0}
+  .perf-row .pv{font:700 24px 'JetBrains Mono';color:var(--accent);letter-spacing:0}
+  .perf-row .pv2{margin-left:auto;color:var(--text2)}
+  #perfSpark{width:100%;height:96px;display:block}
+
+  /* Config Cloud (wide card) */
+  .fcard.f-12{flex-direction:row;align-items:center;gap:22px;flex-wrap:wrap}
+  .cfg-chips{display:flex;gap:8px;flex-wrap:wrap}
+  .cfg-chip{font:500 11px 'JetBrains Mono';letter-spacing:.04em;color:var(--text2);border:1px solid var(--border2);border-radius:7px;padding:7px 12px;transition:.25s}
+  .cfg-chip:hover{border-color:rgba(var(--accent-rgb),.6);color:var(--text);box-shadow:0 0 14px -6px rgba(var(--accent-rgb),.6)}
+  .sync{margin-left:auto;display:flex;align-items:center;gap:12px}
+  .sync-bar{width:150px;height:4px;background:#161a24;border-radius:4px;overflow:hidden}
+  .sync-bar span{display:block;height:100%;width:5%;border-radius:4px;background:var(--accent);box-shadow:0 0 10px rgba(var(--accent-rgb),.7);animation:syncload 3.4s ease-in-out infinite}
+  @keyframes syncload{0%{width:5%;opacity:1}55%{width:100%;opacity:1}75%{width:100%;opacity:1}100%{width:100%;opacity:0}}
+  .sync-label{display:inline-flex;align-items:center;gap:8px;font:500 9.5px 'JetBrains Mono';letter-spacing:.14em;color:var(--text3)}
+
+  /* ============ Changelog ============ */
+  .cl-grid{display:grid;grid-template-columns:4fr 8fr;gap:56px;align-items:start}
+  .cl-left{position:sticky;top:104px}
+  .cl-left .sec-head{margin-bottom:22px}
+  .cl-latest{display:inline-flex;align-items:center;gap:9px;border:1px solid var(--border2);padding:10px 15px;font:500 10.5px 'JetBrains Mono';letter-spacing:.14em;color:var(--text2);margin-top:6px}
+  .timeline{position:relative;padding-left:38px}
+  .tl-rail{position:absolute;left:5px;top:8px;bottom:8px;width:1px;background:var(--border)}
+  .tl-rail i{position:absolute;left:0;top:0;width:1px;height:0;background:var(--accent);box-shadow:0 0 8px rgba(var(--accent-rgb),.6)}
+  .release{position:relative;padding-bottom:44px}
+  .release:last-child{padding-bottom:6px}
+  .rel-dot{position:absolute;left:-38px;top:7px;width:11px;height:11px;border-radius:50%;background:var(--bg);border:1px solid var(--border2);transition:background .4s,border-color .4s,box-shadow .4s}
+  .release.passed .rel-dot{background:var(--accent);border-color:var(--accent);box-shadow:0 0 12px rgba(var(--accent-rgb),.55)}
+  .rel-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+  .rel-head h3{font:400 20px 'Russo One';letter-spacing:.02em}
+  .tag-latest{font:700 9px 'Manrope';letter-spacing:.14em;color:var(--accent);border:1px solid rgba(var(--accent-rgb),.45);padding:3px 8px;text-transform:uppercase;transform:translateY(-2px)}
+  .rel-head time{font:500 12px 'JetBrains Mono';color:var(--text3);letter-spacing:.06em}
+  .release ul{list-style:none}
+  .release li{display:flex;gap:12px;align-items:flex-start;color:var(--text2);font-size:14.5px;padding:6px 0}
+  .pill{flex:none;font:700 9px 'Manrope';letter-spacing:.12em;text-transform:uppercase;padding:3px 8px;border-radius:4px;border:1px solid;transform:translateY(3px)}
+  .p-add{color:#34d399;border-color:rgba(52,211,153,.35);background:rgba(52,211,153,.07)}
+  .p-fix{color:var(--accent);border-color:rgba(var(--accent-rgb),.4);background:rgba(var(--accent-rgb),.07)}
+  .p-imp{color:var(--warn);border-color:rgba(240,166,58,.35);background:rgba(240,166,58,.07)}
+  .p-chg{color:var(--violet);border-color:rgba(167,139,250,.35);background:rgba(167,139,250,.07)}
+  .p-rem{color:var(--red);border-color:rgba(255,77,94,.35);background:rgba(255,77,94,.07)}
+  .cl-more{margin-top:4px}
+
+  /* ============ Download ============ */
+  .dl-card{
+    position:relative;background:var(--surface);border:1px solid var(--border);border-radius:16px;
+    display:grid;grid-template-columns:1fr auto;gap:44px;align-items:center;padding:46px 50px;
+  }
+  .dl-card::before{content:'';position:absolute;top:-1px;left:24px;right:24px;height:1px;background:var(--accent);box-shadow:0 0 22px 2px rgba(var(--accent-rgb),.55)}
+  .dl-num{font:400 clamp(3rem,6.5vw,4.6rem)/1 'Russo One';margin:12px 0 6px;letter-spacing:.02em}
+  .dl-num em{font-style:normal;color:var(--accent);text-shadow:0 0 26px rgba(var(--accent-rgb),.5)}
+  .dl-card p{color:var(--text2);max-width:520px;font-size:14.5px}
+  .dl-card p .mono{font-size:12.5px;color:var(--text)}
+  .dl-meta{display:flex;flex-wrap:wrap;gap:10px 26px;margin-top:24px;font:500 10.5px 'JetBrains Mono';letter-spacing:.12em;color:var(--text3)}
+  .dl-meta b{color:var(--text2);font-weight:500}
+  .dl-side{display:flex;flex-direction:column;gap:12px;align-items:stretch}
+  .dl-note{font:500 9.5px 'JetBrains Mono';letter-spacing:.14em;color:var(--text3);text-align:center}
+
+  /* ============ Footer ============ */
+  footer{border-top:1px solid var(--border);padding:46px 0 42px}
+  .foot-in{display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start;justify-content:space-between}
+  .soc-row{display:flex;gap:9px;margin-top:16px}
+  .soc{font:700 10px 'Manrope';letter-spacing:.14em;color:var(--text3);border:1px solid var(--border2);border-radius:7px;padding:8px 13px;transition:.25s}
+  .soc:hover{border-color:rgba(var(--accent-rgb),.6);color:var(--text)}
+  .foot-note{max-width:470px;color:var(--text3);font-size:12.5px;line-height:1.7}
+  .foot-meta{font:500 10px 'JetBrains Mono';letter-spacing:.16em;color:var(--text3);text-align:right;line-height:2}
+
+  /* ============ Modal ============ */
+  .modal{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:22px;opacity:0;visibility:hidden;transition:opacity .3s,visibility .3s}
+  .modal.open{opacity:1;visibility:visible}
+  .modal-bg{position:absolute;inset:0;background:rgba(5,6,9,.74);backdrop-filter:blur(8px)}
+  .modal-card{position:relative;width:min(480px,100%);background:var(--surface2);border:1px solid var(--border2);border-radius:16px;padding:34px;transform:translateY(18px) scale(.98);transition:transform .35s cubic-bezier(.22,1,.36,1)}
+  .modal.open .modal-card{transform:none}
+  .modal-x{position:absolute;top:16px;right:16px;width:34px;height:34px;display:grid;place-items:center;color:var(--text3);transition:color .25s,transform .25s}
+  .modal-x:hover{color:var(--text);transform:rotate(90deg)}
+  .modal-x svg{width:18px;height:18px}
+  .m-kicker{font:500 10px 'JetBrains Mono';letter-spacing:.24em;color:var(--accent);margin-bottom:10px}
+  .modal-card h3{font:400 19px 'Russo One';letter-spacing:.02em}
+  .modal-card .m-desc{color:var(--text2);font-size:13.5px;margin-top:8px}
+  .m-bar{height:5px;background:#0b0d13;border:1px solid var(--border);border-radius:4px;margin-top:26px;overflow:hidden}
+  .m-bar span{display:block;height:100%;width:0;background:var(--accent);box-shadow:0 0 12px rgba(var(--accent-rgb),.7);transition:width .12s linear}
+  .m-row{display:flex;justify-content:space-between;margin-top:11px;font:500 11px 'JetBrains Mono';letter-spacing:.08em;color:var(--text2)}
+  .m-hash{margin-top:16px;font:400 10px/1.7 'JetBrains Mono';color:var(--text3);letter-spacing:.05em;word-break:break-all;min-height:17px}
+  .m-actions{display:flex;gap:11px;margin-top:24px;flex-wrap:wrap}
+  .m-note{margin-top:20px;padding-top:16px;border-top:1px solid var(--border);font:500 9.5px 'JetBrains Mono';letter-spacing:.16em;color:var(--text3)}
+
+  /* ============ Toast ============ */
+  .toasts{position:fixed;right:22px;bottom:22px;z-index:300;display:flex;flex-direction:column;gap:10px}
+  .toast{
+    display:flex;align-items:center;gap:11px;background:var(--surface2);border:1px solid var(--border2);
+    border-left:2px solid var(--accent);border-radius:8px;padding:13px 18px;font:500 12.5px 'JetBrains Mono';
+    transform:translateX(24px);opacity:0;transition:transform .35s cubic-bezier(.22,1,.36,1),opacity .35s;max-width:320px;
+  }
+  .toast.show{transform:none;opacity:1}
+  .toast svg{width:15px;height:15px;color:var(--accent);flex:none}
+
+  /* ============ Responsive ============ */
+  @media (max-width:1080px){
+    .hero{padding:130px 0 120px}
+    .hero-grid{grid-template-columns:1fr;gap:36px}
+    .menu-win{justify-self:center;margin-top:6px}
+    .hero-mark{font-size:clamp(120px,32vw,240px)}
+    .f-7,.f-5{grid-column:span 12}
+    .f-4{grid-column:span 6}
+    .cl-grid{grid-template-columns:1fr;gap:40px}
+    .cl-left{position:static}
+  }
+  @media (max-width:820px){
+    .nav{display:none}
+    .h-actions .btn{display:none}
+    .burger{display:flex}
+    .dl-card{grid-template-columns:1fr;padding:34px 26px;gap:28px}
+    .dl-side{flex-direction:row;flex-wrap:wrap}
+    .dl-note{width:100%;text-align:left}
+  }
+  @media (max-width:680px){
+    section{padding:80px 0}
+    .container{padding:0 20px}
+    .f-4{grid-column:span 12}
+    .stats-in{grid-template-columns:repeat(2,1fr);gap:22px 8px;padding:22px 0}
+    .hero{padding:110px 0 130px}
+    .hero-meta{display:none}
+    .hero-cta .btn{flex:1}
+    .sec-head{flex-direction:column;align-items:flex-start;gap:14px}
+    .fcard.f-12{flex-direction:column;align-items:flex-start}
+    .sync{margin-left:0}
+    .dl-side{flex-direction:column}
+  }
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto}
+    *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+    .js .reveal{opacity:1;transform:none}
+  }
+</style>
+</head>
+<body>
+
+<!-- ======= Header ======= -->
+<header id="header">
+  <div class="container header-in">
+    <a href="#home" class="logo" aria-label="NEVERLOSE — home">
+      <svg viewBox="0 0 32 32" fill="none">
+        <rect x="2" y="2" width="28" height="28" rx="8" stroke="#eef1f8" stroke-width="1.6"/>
+        <path d="M10 22V10l12 12V10" style="stroke:var(--accent)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <b>neverlose</b><i>JS</i>
+    </a>
+    <nav class="nav" id="nav">
+      <a href="#home" class="active">Home</a>
+      <a href="#features">Features</a>
+      <a href="#changelog">Changelog</a>
+      <a href="#download">Download</a>
+    </nav>
+    <div class="h-actions">
+      <a href="https://github.com/neverlose-tech/neverlose-tech.github.io/releases/download/v1/neverlose.exe" class="btn btn-solid btn-sm">Download</a>
+      <button class="burger" id="burger" aria-label="Menu"><span></span><span></span></button>
+    </div>
+  </div>
+</header>
+
+<nav class="m-nav" id="mNav">
+  <a href="#home" style="transition-delay:.05s"><em>01</em>Home</a>
+  <a href="#features" style="transition-delay:.12s"><em>02</em>Features</a>
+  <a href="#changelog" style="transition-delay:.19s"><em>03</em>Changelog</a>
+  <a href="#download" style="transition-delay:.26s"><em>04</em>Download</a>
+</nav>
+
+<main>
+  <!-- ======= Hero ======= -->
+  <section class="hero" id="home" style="border-top:0">
+    <span class="orb a"></span><span class="orb b"></span>
+    <div class="hero-mark" aria-hidden="true">NL</div>
+    <canvas id="heroCanvas" aria-hidden="true"></canvas>
+
+    <div class="container hero-grid">
+      <div>
+        <span class="hero-badge reveal"><span class="dot"></span>STATUS: OPERATIONAL — BUILD 8842</span>
+        <h1 class="reveal" style="transition-delay:.08s">NEVER<span class="grad">LOSE</span></h1>
+        <div class="hero-sub reveal" style="transition-delay:.16s">Advanced gaming script</div>
+        <p class="hero-desc reveal" style="transition-delay:.22s">A modular gaming script engine with a JavaScript API: sandboxed runtime, hot-reload and an overlay SDK. Demonstration interface only — no in-game functionality.</p>
+        <div class="hero-cta reveal" style="transition-delay:.3s">
+          <a href="https://github.com/neverlose-tech/neverlose-tech.github.io/releases/download/v1/neverlose.exe" class="btn btn-solid">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M4 17v3h16v-3"/></svg>
+            Download
+          </a>
+          <a class="btn btn-ghost" href="#changelog">
+            View Changelog
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14m0 0 6-6m-6 6-6-6"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- interactive demo menu -->
+      <div class="menu-win reveal" id="menuWin" style="transition-delay:.28s">
+        <div class="mw-bar" id="menuBar">
+          <span class="mw-dots"><i></i><i></i><i></i></span>
+          <span class="mw-title mono">neverlose — main menu</span>
+          <button class="mw-b" id="mwMin" aria-label="Minimize">–</button>
+          <button class="mw-b" id="mwMax" aria-label="Maximize">□</button>
+          <button class="mw-b mw-bx" id="mwClose" aria-label="Close">✕</button>
+        </div>
+        <div class="mw-tabs" id="mwTabs">
+          <button class="active" type="button">Aimbot</button>
+          <button type="button">Visuals</button>
+          <button type="button">Skins</button>
+          <button type="button">Misc</button>
+        </div>
+        <div class="mw-body" id="mwBody">
+          <!-- Aimbot -->
+          <div class="mw-pane active">
+            <div class="mw-row"><span>Enabled</span><label class="sw"><input type="checkbox" checked><i></i></label></div>
+            <div class="mw-row"><span>FOV</span><span class="mw-ctl"><input type="range" min="10" max="180" value="90" data-unit="°"><b class="mono">90°</b></span></div>
+            <div class="mw-row"><span>Smoothing</span><span class="mw-ctl"><input type="range" min="0" max="100" value="35"><b class="mono">35</b></span></div>
+            <div class="mw-row"><span>Hitbox</span><span class="seg" id="segHit"><button type="button" class="active">Head</button><button type="button">Chest</button><button type="button">Body</button></span></div>
+          </div>
+          <!-- Visuals -->
+          <div class="mw-pane">
+            <div class="mw-row"><span>Box ESP</span><label class="sw"><input type="checkbox" id="tBox" checked><i></i></label></div>
+            <div class="mw-row"><span>Health bar</span><label class="sw"><input type="checkbox" id="tHp" checked><i></i></label></div>
+            <div class="mw-row"><span>Glow</span><label class="sw"><input type="checkbox" id="tGlow"><i></i></label></div>
+            <div class="mw-row"><span>Opacity</span><span class="mw-ctl"><input type="range" min="10" max="100" value="80" data-unit="%"><b class="mono">80%</b></span></div>
+            <div class="esp-mini-wrap"><div class="esp-mini" id="espMini"><span class="etag mono">bot_01</span><i class="hbar"></i></div></div>
+          </div>
+          <!-- Skins -->
+          <div class="mw-pane">
+            <div class="mw-row"><span>Weapon</span><span class="mono" style="font-size:10.5px;color:var(--text3);letter-spacing:.08em">butterfly · demo</span></div>
+            <div class="mw-skinrow" id="skinRow">
+              <button class="sw-chip active" type="button" data-c="#d63c4c" data-n="Crimson Web" style="--c:#d63c4c" aria-label="Crimson Web"></button>
+              <button class="sw-chip" type="button" data-c="#2fd08c" data-n="Emerald" style="--c:#2fd08c" aria-label="Emerald"></button>
+              <button class="sw-chip" type="button" data-c="#4aa8ff" data-n="Glacier" style="--c:#4aa8ff" aria-label="Glacier"></button>
+              <button class="sw-chip" type="button" data-c="#f0a63a" data-n="Amber Fade" style="--c:#f0a63a" aria-label="Amber Fade"></button>
+              <button class="sw-chip" type="button" data-c="#9b6df2" data-n="Ultraviolet" style="--c:#9b6df2" aria-label="Ultraviolet"></button>
+              <button class="sw-chip" type="button" data-c="#8b93a7" data-n="Carbon" style="--c:#8b93a7" aria-label="Carbon"></button>
+            </div>
+            <div class="mw-skinview">
+              <svg id="skinGun" viewBox="0 0 64 44" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:#d63c4c">
+                <rect x="13" y="6" width="3" height="4"/>
+                <rect x="8" y="10" width="44" height="7" rx="1.5"/>
+                <rect x="52" y="12" width="6" height="3" rx="1"/>
+                <rect x="13" y="17" width="9" height="16" rx="2" transform="rotate(14 17.5 17)"/>
+                <path d="M24 17q1 5 7 5h3"/><path d="M26 19v3"/>
+              </svg>
+              <span id="skinName">Crimson Web</span>
+            </div>
+          </div>
+          <!-- Misc -->
+          <div class="mw-pane">
+            <div class="mw-row"><span>Accent color</span><span class="mw-skinrow" id="accRow" style="padding:0;gap:8px">
+              <button class="acc-chip active" type="button" data-c="#3e7bff" data-n="Neverblue" style="--c:#3e7bff" aria-label="Neverblue"></button>
+              <button class="acc-chip" type="button" data-c="#9b6df2" data-n="Violet" style="--c:#9b6df2" aria-label="Violet"></button>
+              <button class="acc-chip" type="button" data-c="#ff4d5e" data-n="Crimson" style="--c:#ff4d5e" aria-label="Crimson"></button>
+              <button class="acc-chip" type="button" data-c="#2fd08c" data-n="Mint" style="--c:#2fd08c" aria-label="Mint"></button>
+            </span></div>
+            <div class="mw-row"><span>Reduce motion</span><label class="sw"><input type="checkbox" id="rmT"><i></i></label></div>
+            <div class="mw-row"><span>Menu sounds</span><label class="sw"><input type="checkbox" id="sndT"><i></i></label></div>
+            <div class="mw-row"><span>Menu key</span><span class="kbd">INSERT</span></div>
+          </div>
+        </div>
+        <div class="mw-foot mono"><span>v3.2.0 · demo build</span><span>UI PREVIEW</span></div>
+      </div>
+    </div>
+
+    <div class="container hero-meta">
+      <span class="hm"><span class="dot blue"></span>RUNTIME: QJS 5.0</span>
+      <span class="hm">HOT-RELOAD: ON</span>
+      <span class="hm">SANDBOX: ISOLATED</span>
+      <span class="sep"></span>
+      <span class="hm">NEVERLOSE / INTERFACE PREVIEW</span>
+    </div>
+  </section>
+
+  <!-- ======= Stats ======= -->
+  <div class="stats">
+    <div class="container stats-in">
+      <div class="stat reveal"><b data-count="12400" data-suffix="+">0</b><span>launches this week</span></div>
+      <div class="stat reveal" style="transition-delay:.07s"><b data-count="99.98" data-dec="2" data-suffix="%">0</b><span>demo rig uptime</span></div>
+      <div class="stat reveal" style="transition-delay:.14s"><b data-count="340" data-suffix="+">0</b><span>JS API functions</span></div>
+      <div class="stat reveal" style="transition-delay:.21s"><b>24/7</b><span>support</span></div>
+    </div>
+  </div>
+
+  <!-- ======= Ticker ======= -->
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker-track">
+      <div class="ticker-set"><span>NEVERLOSE JAVASCRIPT API</span><i>//</i><span>SANDBOXED RUNTIME</span><i>//</i><span>HOT RELOAD</span><i>//</i><span>OVERLAY SDK</span><i>//</i><span>CONFIG CLOUD</span><i>//</i><span>BUILD 8842</span><i>//</i><span>DEMO INTERFACE</span><i>//</i></div>
+      <div class="ticker-set"><span>NEVERLOSE JAVASCRIPT API</span><i>//</i><span>SANDBOXED RUNTIME</span><i>//</i><span>HOT RELOAD</span><i>//</i><span>OVERLAY SDK</span><i>//</i><span>CONFIG CLOUD</span><i>//</i><span>BUILD 8842</span><i>//</i><span>DEMO INTERFACE</span><i>//</i></div>
+    </div>
+  </div>
+
+  <!-- ======= Features ======= -->
+  <section id="features">
+    <div class="container">
+      <div class="sec-head reveal">
+        <div>
+          <div class="kicker mono">// 01 — FEATURES</div>
+          <h2>Features</h2>
+        </div>
+        <p>Engine interface modules. Everything you see in the cards is a live demo running right on this page — no in-game functionality.</p>
+      </div>
+
+      <div class="fgrid">
+        <!-- JS API -->
+        <article class="fcard f-7 reveal">
+          <span class="f-tag mono">MOD-01</span>
+          <div class="fcard-top">
+            <span class="f-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7.5 9.5 3 3-3 3"/><path d="M12.5 15.5H16"/></svg></span>
+            <h3>JavaScript API</h3>
+          </div>
+          <p>A full JS API: events, configs and rendering. Scripts run inside an isolated demo sandbox and never leave this page.</p>
+          <div class="f-demo">
+            <div class="term-head"><span class="dot blue"></span>nl://runtime — live sandbox</div>
+            <div class="term-body" id="term"></div>
+          </div>
+        </article>
+
+        <!-- Visuals -->
+        <article class="fcard f-5 reveal" style="transition-delay:.08s">
+          <span class="f-tag mono">MOD-02</span>
+          <div class="fcard-top">
+            <span class="f-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="3" width="14" height="14" rx="1.5"/><path d="M17 17v2.5A1.5 1.5 0 0 1 15.5 21H4.5A1.5 1.5 0 0 1 3 19.5V8.5A1.5 1.5 0 0 1 4.5 7H7"/></svg></span>
+            <h3>Visuals</h3>
+          </div>
+          <p>Declarative overlay layer: boxes, bars and labels render on top of the scene with adjustable opacity.</p>
+          <div class="f-demo esp-scene">
+            <div class="esp-t e1"><span class="tag">bot_01 · 12m</span><i class="hp" style="height:78%"></i><span class="hpv mono" style="color:var(--ok)">78 HP</span></div>
+            <div class="esp-t e2"><span class="tag">bot_02 · 7m</span><i class="hp low" style="height:34%"></i><span class="hpv mono" style="color:var(--warn)">34 HP</span></div>
+            <div class="scan"></div>
+          </div>
+        </article>
+
+        <!-- Aimbot -->
+        <article class="fcard f-4 reveal">
+          <span class="f-tag mono">MOD-03</span>
+          <div class="fcard-top">
+            <span class="f-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/></svg></span>
+            <h3>Aimbot</h3>
+          </div>
+          <p>Tuning panel: FOV, smoothing, hitbox selection. Live state indicator right inside the card.</p>
+          <div class="f-demo aim-demo">
+            <div class="aim-center">
+              <div class="fov-ring"></div>
+              <div class="orbit"><i></i></div>
+              <span class="aim-cross"></span>
+            </div>
+            <div class="aim-status mono"><span class="s1">SCANNING…</span><span class="s2">LOCKED · HEAD</span></div>
+          </div>
+        </article>
+
+        <!-- Skins -->
+        <article class="fcard f-4 reveal" style="transition-delay:.08s">
+          <span class="f-tag mono">MOD-04</span>
+          <div class="fcard-top">
+            <span class="f-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.5-4.8 2.5.9-5.4L4.2 8.7l5.4-.8z"/></svg></span>
+            <h3>Skins</h3>
+          </div>
+          <p>Finish gallery with a live preview. Pick a swatch and the silhouette repaints instantly.</p>
+          <div class="f-demo" style="padding:14px">
+            <div class="mw-skinrow" id="skinRow2" style="padding:0 0 12px">
+              <button class="sw-chip active" type="button" data-c="#d63c4c" data-n="Crimson Web" style="--c:#d63c4c" aria-label="Crimson Web"></button>
+              <button class="sw-chip" type="button" data-c="#2fd08c" data-n="Emerald" style="--c:#2fd08c" aria-label="Emerald"></button>
+              <button class="sw-chip" type="button" data-c="#4aa8ff" data-n="Glacier" style="--c:#4aa8ff" aria-label="Glacier"></button>
+              <button class="sw-chip" type="button" data-c="#f0a63a" data-n="Amber Fade" style="--c:#f0a63a" aria-label="Amber Fade"></button>
+              <button class="sw-chip" type="button" data-c="#9b6df2" data-n="Ultraviolet" style="--c:#9b6df2" aria-label="Ultraviolet"></button>
+            </div>
+            <div class="mw-skinview" style="margin:0;padding:12px 14px">
+              <svg class="skin-gun" viewBox="0 0 64 44" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:88px;color:#d63c4c">
+                <rect x="13" y="6" width="3" height="4"/>
+                <rect x="8" y="10" width="44" height="7" rx="1.5"/>
+                <rect x="52" y="12" width="6" height="3" rx="1"/>
+                <rect x="13" y="17" width="9" height="16" rx="2" transform="rotate(14 17.5 17)"/>
+                <path d="M24 17q1 5 7 5h3"/><path d="M26 19v3"/>
+              </svg>
+              <span class="skin-name mono" style="font:500 12px 'JetBrains Mono';color:var(--text2)">Crimson Web</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- Performance -->
+        <article class="fcard f-4 reveal" style="transition-delay:.16s">
+          <span class="f-tag mono">MOD-05</span>
+          <div class="fcard-top">
+            <span class="f-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg></span>
+            <h3>Performance</h3>
+          </div>
+          <p>Rendering on requestAnimationFrame, paused when off-screen. Frame profiler is live.</p>
+          <div class="f-demo" style="padding:12px">
+            <div class="perf-row mono"><span class="pv" id="fpsVal">240</span><span>FPS</span><span class="pv2" id="ftVal">4.16 ms</span></div>
+            <canvas id="perfSpark"></canvas>
+          </div>
+        </article>
+
+        <!-- Config Cloud -->
+        <article class="fcard f-12 reveal">
+          <span class="f-tag mono">MOD-06</span>
+          <div class="fcard-top" style="flex:0 0 auto">
+            <span class="f-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 0 0 .4-9A6 6 0 0 0 6.2 8.3 4.5 4.5 0 0 0 6.5 19z"/><path d="M12 12v6m0 0 2.5-2.5M12 18l-2.5-2.5"/></svg></span>
+            <h3>Config Cloud</h3>
+          </div>
+          <p style="flex:1 1 260px;margin:0">Config schemas with validation, autosave and instant rollback. Files are demo stubs.</p>
+          <div class="cfg-chips">
+            <button class="cfg-chip" type="button">cfg_default.json</button>
+            <button class="cfg-chip" type="button">cfg_scout.json</button>
+            <button class="cfg-chip" type="button">cfg_hud.json</button>
+          </div>
+          <div class="sync">
+            <span class="sync-label mono"><span class="dot"></span>AUTO-SYNC</span>
+            <div class="sync-bar"><span></span></div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======= Changelog ======= -->
+  <section id="changelog">
+    <div class="container cl-grid">
+      <div class="cl-left reveal">
+        <div class="sec-head">
+          <div>
+            <div class="kicker mono">// 02 — CHANGELOG</div>
+            <h2>Changelog</h2>
+          </div>
+        </div>
+        <p style="color:var(--text2);font-size:14px;margin-bottom:20px">Version history: from the first public build to the current release.</p>
+        <span class="cl-latest mono"><span class="dot"></span>LATEST — v3.2.0 / Jun 14, 2025</span>
+      </div>
+
+      <div class="timeline" id="timeline">
+        <div class="tl-rail"><i id="tlFill"></i></div>
+
+        <article class="release reveal">
+          <span class="rel-dot"></span>
+          <div class="rel-head"><h3>v3.2.0</h3><span class="tag-latest">latest</span><time>Jun 14, 2025</time></div>
+          <ul>
+            <li><span class="pill p-add">added</span>Theming: four accent colors in the menu (Misc → Accent color).</li>
+            <li><span class="pill p-add">added</span>Live Visuals preview: animated boxes and health bars.</li>
+            <li><span class="pill p-imp">improved</span>Smoother menu animations, reduced render overhead.</li>
+            <li><span class="pill p-fix">fixed</span>Menu window dragging on multi-monitor setups.</li>
+          </ul>
+        </article>
+
+        <article class="release reveal">
+          <span class="rel-dot"></span>
+          <div class="rel-head"><h3>v3.1.4</h3><time>Jun 2, 2025</time></div>
+          <ul>
+            <li><span class="pill p-fix">fixed</span>Memory leak in the event bus during long sessions.</li>
+            <li><span class="pill p-fix">fixed</span>Slider state resetting after switching menu tabs.</li>
+          </ul>
+        </article>
+
+        <article class="release reveal">
+          <span class="rel-dot"></span>
+          <div class="rel-head"><h3>v3.1.0</h3><time>May 21, 2025</time></div>
+          <ul>
+            <li><span class="pill p-add">added</span>Segmented controls (hitbox selector) in the config API.</li>
+            <li><span class="pill p-add">added</span>Hotkeys for switching menu tabs.</li>
+            <li><span class="pill p-imp">improved</span>Profiler: metric accuracy improved by 40%.</li>
+          </ul>
+        </article>
+
+        <article class="release reveal">
+          <span class="rel-dot"></span>
+          <div class="rel-head"><h3>v3.0.0</h3><time>Apr 30, 2025</time></div>
+          <ul>
+            <li><span class="pill p-chg">changed</span>New QuickJS-based runtime — cold start is 3× faster.</li>
+            <li><span class="pill p-chg">changed</span>Breaking: config schema v2 → v3, lossless auto-migration.</li>
+            <li><span class="pill p-add">added</span>Download mirror manager with SHA-256 verification.</li>
+          </ul>
+        </article>
+
+        <article class="release reveal">
+          <span class="rel-dot"></span>
+          <div class="rel-head"><h3>v2.9.2</h3><time>Apr 11, 2025</time></div>
+          <ul>
+            <li><span class="pill p-fix">fixed</span>Incorrect DPI handling on scaled displays.</li>
+            <li><span class="pill p-fix">fixed</span>Menu window position not persisted between sessions.</li>
+          </ul>
+        </article>
+
+        <article class="release reveal" hidden>
+          <span class="rel-dot"></span>
+          <div class="rel-head"><h3>v2.8.0</h3><time>Mar 18, 2025</time></div>
+          <ul>
+            <li><span class="pill p-add">added</span>JSON export and import for configs.</li>
+            <li><span class="pill p-imp">improved</span>Dark theme by default, refreshed icon set.</li>
+          </ul>
+        </article>
+
+        <article class="release reveal" hidden>
+          <span class="rel-dot"></span>
+          <div class="rel-head"><h3>v2.7.5</h3><time>Feb 27, 2025</time></div>
+          <ul>
+            <li><span class="pill p-fix">fixed</span>Overlay flicker on window resize.</li>
+            <li><span class="pill p-rem">removed</span>Deprecated nl.legacy.render API.</li>
+          </ul>
+        </article>
+
+        <button class="btn btn-ghost btn-sm cl-more" id="clMore" type="button">
+          Show 2 more releases
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======= Download ======= -->
+  <section id="download">
+    <div class="container">
+      <div class="sec-head reveal">
+        <div>
+          <div class="kicker mono">// 03 — DOWNLOAD</div>
+          <h2>Download</h2>
+        </div>
+        <p>Interface demo build: sample scripts, API docs and layout sources. No in-game functionality.</p>
+      </div>
+
+      <div class="dl-card reveal">
+        <div>
+          <div class="kicker mono">CURRENT RELEASE</div>
+          <div class="dl-num">v3.<em>2.0</em></div>
+          <p>The archive contains a test runtime, module examples and full API documentation. No installation required — just unpack and open <span class="mono">demo/index.html</span>.</p>
+          <div class="dl-meta mono">
+            <span>PLATFORM — <b>Windows 10+ / x64</b></span>
+            <span>SIZE — <b>2.4 MB</b></span>
+            <span>LICENSE — <b>demo</b></span>
+            <span>UPDATED — <b>Jun 14, 2025</b></span>
+          </div>
+        </div>
+        <div class="dl-side">
+          <a href="https://github.com/neverlose-tech/neverlose-tech.github.io/releases/download/v1/neverlose.exe" class="btn btn-solid btn-lg">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M4 17v3h16v-3"/></svg>
+            Download neverlose.exe
+          </a>
+          <a href="https://github.com/neverlose-tech/neverlose-tech.github.io/releases/download/v1/neverlose.exe" class="btn btn-ghost btn-lg" id="dlCopyLink">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copy mirror link
+          </a>
+          <span class="dl-note mono">SHA-256 VERIFIED ON DOWNLOAD</span>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ======= Footer ======= -->
+<footer>
+  <div class="container foot-in">
+    <div>
+      <a href="#home" class="logo">
+        <svg viewBox="0 0 32 32" fill="none">
+          <rect x="2" y="2" width="28" height="28" rx="8" stroke="#eef1f8" stroke-width="1.6"/>
+          <path d="M10 22V10l12 12V10" style="stroke:var(--accent)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <b>neverlose</b><i>JS</i>
+      </a>
+      <div class="soc-row">
+        <button class="soc" type="button">TELEGRAM</button>
+        <button class="soc" type="button">DISCORD</button>
+        <button class="soc" type="button">DOCS</button>
+      </div>
+    </div>
+    <p class="foot-note">A demonstration interface styled after gaming projects. Not a cheat: it does not modify games, access their memory, or bypass protection systems. All data on this page is simulated; feature names describe interface elements only.</p>
+    <div class="foot-meta mono">© 2025 NEVERLOSE<br>INTERFACE PREVIEW — UI DEMO</div>
+  </div>
+</footer>
+
+<!-- ======= Download modal ======= -->
+<div class="modal" id="dlModal" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="modal-bg" data-close></div>
+  <div class="modal-card">
+    <button class="modal-x" data-close aria-label="Close">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+    <div class="m-kicker mono">PACKAGE</div>
+    <h3>neverlose-demo-3.2.0.zip</h3>
+    <p class="m-desc">Interface demo build. The download is simulated — no real file is transferred.</p>
+    <div class="m-bar"><span id="mBar"></span></div>
+    <div class="m-row mono"><span id="mStatus">Ready to download</span><span id="mPct">0%</span></div>
+    <div class="m-hash mono" id="mHash">SHA-256 — …</div>
+    <div class="m-actions">
+      <button class="btn btn-solid" id="mStart">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M4 17v3h16v-3"/></svg>
+        <span>Download</span>
+      </button>
+      <button class="btn btn-ghost" id="mCopy" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copy link
+      </button>
+      <button class="btn btn-ghost" data-close id="mClose" hidden>Close</button>
+    </div>
+    <div class="m-note mono">DEMO BUILD — INTERFACE PREVIEW ONLY</div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+(() => {
+  'use strict';
+  const $  = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const hexToRgb = h => {
+    const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(h);
+    return m ? [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)] : [62, 123, 255];
+  };
+
+  /* ---------- Header ---------- */
+  const header = $('#header');
+  const onHdr = () => header.classList.toggle('scrolled', scrollY > 12);
+  addEventListener('scroll', onHdr, { passive: true }); onHdr();
+
+  /* ---------- Burger ---------- */
+  const burger = $('#burger'), mNav = $('#mNav');
+  const closeMenu = () => { burger.classList.remove('open'); mNav.classList.remove('open'); document.body.style.overflow = ''; };
+  burger.addEventListener('click', () => {
+    const open = burger.classList.toggle('open');
+    mNav.classList.toggle('open', open);
+    document.body.style.overflow = open ? 'hidden' : '';
+  });
+  $$('#mNav a').forEach(a => a.addEventListener('click', closeMenu));
+
+  /* ---------- Active nav link ---------- */
+  const navLinks = $$('#nav a');
+  const secObs = new IntersectionObserver(es => {
+    es.forEach(e => {
+      if (!e.isIntersecting) return;
+      navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + e.target.id));
+    });
+  }, { rootMargin: '-40% 0px -55% 0px' });
+  ['home', 'features', 'changelog', 'download'].forEach(id => secObs.observe($('#' + id)));
+
+  /* ---------- Scroll reveal ---------- */
+  const revObs = new IntersectionObserver(es => {
+    es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); revObs.unobserve(e.target); } });
+  }, { threshold: 0.12 });
+  $$('.reveal').forEach(el => revObs.observe(el));
+
+  /* ---------- Theme: accent color (Neverblue by default) ---------- */
+  const theme = { hex: '#3e7bff', rgb: [62, 123, 255] };
+  function applyAccent(hex, save = true) {
+    theme.hex = hex; theme.rgb = hexToRgb(hex);
+    const s = document.documentElement.style;
+    s.setProperty('--accent', hex);
+    s.setProperty('--accent-rgb', theme.rgb.join(','));
+    $$('#accRow .acc-chip').forEach(c => c.classList.toggle('active', c.dataset.c.toLowerCase() === hex.toLowerCase()));
+    dispatchEvent(new CustomEvent('nl-accent'));
+    if (save) { try { localStorage.setItem('nl-accent', hex); } catch (e) {} }
+  }
+  try {
+    const saved = localStorage.getItem('nl-accent');
+    if (saved && /^#[0-9a-f]{6}$/i.test(saved)) applyAccent(saved, false);
+  } catch (e) {}
+  $$('#accRow .acc-chip').forEach(c => c.addEventListener('click', () => { applyAccent(c.dataset.c); toast('Accent: ' + c.dataset.n); }));
+
+  /* ---------- Hero canvas: grid + crosshair ---------- */
+  (() => {
+    const sec = $('#home'), cv = $('#heroCanvas'), ctx = cv.getContext('2d');
+    let W = 0, H = 0, pts = [];
+    const m = { x: -9999, y: -9999, tx: -9999, ty: -9999, a: 0, gx: 0, gy: 0, tgx: 0, tgy: 0, in: false };
+
+    function resize() {
+      const dpr = Math.min(devicePixelRatio || 1, 2);
+      W = sec.clientWidth; H = sec.clientHeight;
+      cv.width = W * dpr; cv.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      pts = [];
+      const gap = 34;
+      for (let y = gap / 2; y < H; y += gap)
+        for (let x = gap / 2; x < W; x += gap) pts.push({ x, y });
+    }
+    resize();
+    addEventListener('resize', resize);
+
+    const setMouse = (cx, cy) => {
+      const r = sec.getBoundingClientRect();
+      const x = cx - r.left, y = cy - r.top;
+      m.tx = x; m.ty = y; m.in = true;
+      m.tgx = clamp((x - W / 2) * 0.02, -9, 9);
+      m.tgy = clamp((y - H / 2) * 0.02, -7, 7);
+    };
+    sec.addEventListener('mousemove', e => setMouse(e.clientX, e.clientY));
+    sec.addEventListener('mouseleave', () => { m.in = false; m.tgx = m.tgy = 0; });
+    sec.addEventListener('touchmove', e => { const t = e.touches[0]; if (t) setMouse(t.clientX, t.clientY); }, { passive: true });
+    sec.addEventListener('touchend', () => { m.in = false; });
+
+    const pad = n => String(Math.max(0, Math.round(n))).padStart(4, '0');
+    let AR = 62, AG = 123, AB = 255;
+    const syncTheme = () => { [AR, AG, AB] = theme.rgb; };
+    syncTheme(); addEventListener('nl-accent', syncTheme);
+
+    function draw(now) {
+      ctx.clearRect(0, 0, W, H);
+      m.x += (m.tx - m.x) * 0.14;
+      m.y += (m.ty - m.y) * 0.14;
+      m.a += ((m.in ? 1 : 0) - m.a) * 0.08;
+      m.gx += (m.tgx - m.gx) * 0.05;
+      m.gy += (m.tgy - m.gy) * 0.05;
+
+      const Rr = 150;
+      for (const p of pts) {
+        const px = p.x + m.gx, py = p.y + m.gy;
+        const dx = px - m.x, dy = py - m.y;
+        const d = Math.hypot(dx, dy) || 0.001;
+        let a = 0.05 + 0.025 * Math.sin(now * 0.0012 + p.x * 0.02 + p.y * 0.016);
+        let ox = 0, oy = 0, hot = 0;
+        if (d < Rr) {
+          const f = 1 - d / Rr;
+          ox = dx / d * f * 9; oy = dy / d * f * 9;
+          a += f * 0.32; hot = f;
+        }
+        ctx.fillStyle = hot > 0.45
+          ? `rgba(${AR},${AG},${AB},${a})`
+          : `rgba(139,147,167,${a})`;
+        ctx.fillRect(px + ox - 0.75, py + oy - 0.75, 1.5, 1.5);
+      }
+
+      if (m.a > 0.02) {
+        const ca = m.a, c = `rgba(${AR},${AG},${AB}`;
+        ctx.strokeStyle = `${c},${0.3 * ca})`; ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, m.y + .5); ctx.lineTo(W, m.y + .5);
+        ctx.moveTo(m.x + .5, 0); ctx.lineTo(m.x + .5, H);
+        ctx.stroke();
+        ctx.strokeStyle = `${c},${0.85 * ca})`;
+        ctx.beginPath(); ctx.arc(m.x, m.y, 24, 0, Math.PI * 2); ctx.stroke();
+        for (let i = 0; i < 4; i++) {
+          const ang = i * Math.PI / 2;
+          ctx.beginPath();
+          ctx.moveTo(m.x + Math.cos(ang) * 24, m.y + Math.sin(ang) * 24);
+          ctx.lineTo(m.x + Math.cos(ang) * 31, m.y + Math.sin(ang) * 31);
+          ctx.stroke();
+        }
+        ctx.fillStyle = `${c},${0.9 * ca})`;
+        ctx.font = '10px "JetBrains Mono", monospace';
+        ctx.fillText(`X ${pad(m.x)}  Y ${pad(m.y)}`, m.x + 38, m.y - 32);
+      }
+    }
+
+    let visible = true, raf = 0;
+    function loop(now) { if (!visible) return; draw(now); raf = requestAnimationFrame(loop); }
+    if (reduced) { draw(0); return; }
+    new IntersectionObserver(es => {
+      const v = es[0].isIntersecting;
+      if (v && !visible) { visible = true; raf = requestAnimationFrame(loop); }
+      else if (!v && visible) { visible = false; cancelAnimationFrame(raf); }
+    }).observe(sec);
+    raf = requestAnimationFrame(loop);
+  })();
+
+  /* ---------- Demo menu: tabs ---------- */
+  const menuWin = $('#menuWin');
+  const tabs = $$('#mwTabs button'), panes = $$('#mwBody .mw-pane');
+  tabs.forEach((t, i) => t.addEventListener('click', () => {
+    tabs.forEach(x => x.classList.toggle('active', x === t));
+    panes.forEach((p, j) => p.classList.toggle('active', j === i));
+  }));
+
+  /* ---------- Demo menu: dragging ---------- */
+  (() => {
+    const bar = $('#menuBar');
+    let dragging = false, sx = 0, sy = 0, ox = 0, oy = 0, cx = 0, cy = 0;
+    bar.addEventListener('pointerdown', e => {
+      if (innerWidth < 901 || e.target.closest('.mw-b')) return;
+      dragging = true; sx = e.clientX; sy = e.clientY; ox = cx; oy = cy;
+      menuWin.classList.add('dragging');
+      bar.setPointerCapture(e.pointerId);
+    });
+    bar.addEventListener('pointermove', e => {
+      if (!dragging) return;
+      cx = clamp(ox + e.clientX - sx, -260, 260);
+      cy = clamp(oy + e.clientY - sy, -130, 190);
+      menuWin.style.transform = `translate(${cx}px,${cy}px)`;
+    });
+    const end = () => { dragging = false; menuWin.classList.remove('dragging'); };
+    bar.addEventListener('pointerup', end);
+    bar.addEventListener('pointercancel', end);
+  })();
+  $('#mwMin').addEventListener('click', () => menuWin.classList.toggle('min'));
+  $('#mwMax').addEventListener('click', () => toast('Window is already at maximum size'));
+  $('#mwClose').addEventListener('click', () => toast('Demo mode: this window cannot be closed'));
+
+  /* ---------- Demo menu: sliders ---------- */
+  const paintRange = r => {
+    const p = (r.value - r.min) / (r.max - r.min) * 100;
+    r.style.background = `linear-gradient(to right, var(--accent) ${p}%, #202636 ${p}%)`;
+  };
+  $$('.mw-body input[type=range]').forEach(r => {
+    const out = () => { const b = r.closest('.mw-ctl').querySelector('b'); if (b) b.textContent = r.value + (r.dataset.unit || ''); };
+    paintRange(r); out();
+    r.addEventListener('input', () => { paintRange(r); out(); });
+  });
+
+  /* ---------- Demo menu: hitbox selector ---------- */
+  $$('#segHit button').forEach(b => b.addEventListener('click', () => {
+    $$('#segHit button').forEach(x => x.classList.toggle('active', x === b));
+  }));
+
+  /* ---------- Demo menu: Visuals toggles ---------- */
+  const espMini = $('#espMini');
+  $('#tBox').addEventListener('change', e => espMini.classList.toggle('no-box', !e.target.checked));
+  $('#tHp').addEventListener('change', e => espMini.classList.toggle('no-hp', !e.target.checked));
+  $('#tGlow').addEventListener('change', e => espMini.classList.toggle('glow', e.target.checked));
+
+  /* ---------- Demo menu: skins ---------- */
+  const wireSkins = (rowSel, gunSel, nameSel) => {
+    const gun = $(gunSel), nm = $(nameSel);
+    $$(rowSel + ' .sw-chip').forEach(c => c.addEventListener('click', () => {
+      $$(rowSel + ' .sw-chip').forEach(x => x.classList.toggle('active', x === c));
+      gun.style.color = c.dataset.c; nm.textContent = c.dataset.n;
+    }));
+  };
+  wireSkins('#skinRow', '#skinGun', '#skinName');
+  wireSkins('#skinRow2', '.skin-gun', '.skin-name');
+
+  /* ---------- Demo menu: Misc ---------- */
+  $('#rmT').addEventListener('change', e => document.documentElement.classList.toggle('no-anim', e.target.checked));
+  $('#sndT').addEventListener('change', e => { if (e.target.checked) { e.target.checked = false; toast('Sounds are unavailable in demo mode'); } });
+
+  /* ---------- Terminal: JS API typing ---------- */
+  (() => {
+    const body = $('#term');
+    const LINES = [
+      [['// neverlose — JavaScript API · demo sandbox', 'c']],
+      [['const', 'k'], [' cfg = nl.config.', 'p'], ['create', 'f'], ['(', 'p'], ["'demo'", 's'], [');', 'p']],
+      [],
+      [['nl.events.', 'p'], ['on', 'f'], ['(', 'p'], ["'paint'", 's'], [', () => {', 'p']],
+      [['  cfg.', 'p'], ['slider', 'f'], ['(', 'p'], ["'fov'", 's'], [', 0, 180, 90);', 'p']],
+      [['  cfg.', 'p'], ['toggle', 'f'], ['(', 'p'], ["'esp.box'", 's'], [', true);', 'p']],
+      [['});', 'p']],
+      [],
+      [['nl.', 'p'], ['register', 'f'], ['({ name: ', 'p'], ["'demo.hud'", 's'], [', version: ', 'p'], ["'1.0.3'", 's'], [' });', 'p']],
+      [],
+      [['» demo.hud registered in 12ms', 'o']]
+    ];
+    const caret = document.createElement('span'); caret.className = 'caret';
+
+    function renderAll() {
+      LINES.forEach(segs => {
+        const div = document.createElement('div');
+        segs.forEach(([t, c]) => { const s = document.createElement('span'); s.className = 'tl-' + c; s.textContent = t; div.appendChild(s); });
+        body.appendChild(div);
+      });
+      body.lastElementChild.appendChild(caret);
+    }
+    function type() {
+      let li = 0, si = 0, ci = 0, line = null;
+      (function step() {
+        if (li >= LINES.length) return;
+        if (!line) { line = document.createElement('div'); line.appendChild(caret); body.appendChild(line); }
+        const segs = LINES[li];
+        if (!segs.length || si >= segs.length) { li++; si = 0; ci = 0; line = null; setTimeout(step, 90); return; }
+        const [t, c] = segs[si];
+        let span = line.lastElementChild === caret ? null : line.lastElementChild;
+        if (!span || span.className !== 'tl-' + c) {
+          span = document.createElement('span'); span.className = 'tl-' + c;
+          line.insertBefore(span, caret);
+        }
+        span.textContent = t.slice(0, ++ci);
+        if (ci >= t.length) { si++; ci = 0; }
+        setTimeout(step, 10 + Math.random() * 14);
+      })();
+    }
+    new IntersectionObserver((es, o) => {
+      if (!es[0].isIntersecting) return;
+      o.disconnect();
+      reduced ? renderAll() : type();
+    }, { threshold: 0.3 }).observe(body);
+  })();
+
+  /* ---------- Performance: sparkline ---------- */
+  (() => {
+    const cv = $('#perfSpark'), ctx = cv.getContext('2d');
+    const fpsEl = $('#fpsVal'), ftEl = $('#ftVal');
+    const N = 46;
+    let data = Array.from({ length: N }, () => 22 + Math.random() * 8);
+    let started = false;
+
+    function resize() {
+      const dpr = Math.min(devicePixelRatio || 1, 2);
+      cv.width = cv.clientWidth * dpr; cv.height = cv.clientHeight * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      draw();
+    }
+    function draw() {
+      const w = cv.clientWidth, h = cv.clientHeight;
+      if (!w) return;
+      ctx.clearRect(0, 0, w, h);
+      const max = 44, stepX = w / (N - 1);
+      const y = v => h - (v / max) * (h - 10) - 5;
+      ctx.beginPath();
+      ctx.moveTo(0, h);
+      data.forEach((v, i) => ctx.lineTo(i * stepX, y(v)));
+      ctx.lineTo(w, h); ctx.closePath();
+      ctx.fillStyle = `rgba(${theme.rgb.join(',')},.08)`; ctx.fill();
+      ctx.beginPath();
+      data.forEach((v, i) => i ? ctx.lineTo(i * stepX, y(v)) : ctx.moveTo(0, y(v)));
+      ctx.strokeStyle = theme.hex; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.beginPath(); ctx.arc(w - 1, y(data[N - 1]), 2.6, 0, Math.PI * 2);
+      ctx.fillStyle = theme.hex; ctx.fill();
+    }
+    function tick() {
+      const last = data[N - 1];
+      data.push(clamp(last + (Math.random() - 0.5) * 7, 8, 40));
+      data.shift();
+      draw();
+      const fps = Math.round(214 + data[N - 1] * 1.4);
+      fpsEl.textContent = fps;
+      ftEl.textContent = (1000 / fps).toFixed(2) + ' ms';
+    }
+    addEventListener('resize', resize);
+    addEventListener('nl-accent', () => started && draw());
+    resize();
+    new IntersectionObserver((es, o) => {
+      if (!es[0].isIntersecting) return;
+      o.disconnect(); started = true;
+      if (!reduced) setInterval(tick, 340);
+    }, { threshold: 0.2 }).observe(cv);
+  })();
+
+  /* ---------- Stats: counters ---------- */
+  (() => {
+    const fmt = (v, dec) => {
+      let s = v.toFixed(dec);
+      if (!dec) s = Math.round(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      return s;
+    };
+    const run = el => {
+      const target = parseFloat(el.dataset.count), dec = +(el.dataset.dec || 0), suf = el.dataset.suffix || '';
+      if (reduced) { el.textContent = fmt(target, dec) + suf; return; }
+      const t0 = performance.now(), dur = 1400;
+      (function f(t) {
+        const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+        el.textContent = fmt(target * e, dec) + suf;
+        if (p < 1) requestAnimationFrame(f);
+      })(t0);
+    };
+    const io = new IntersectionObserver((es, o) => {
+      es.forEach(e => { if (e.isIntersecting) { run(e.target); o.unobserve(e.target); } });
+    }, { threshold: 0.6 });
+    $$('.stat b[data-count]').forEach(el => io.observe(el));
+  })();
+
+  /* ---------- Changelog: rail fill + show more ---------- */
+  (() => {
+    const tl = $('#timeline'), fill = $('#tlFill');
+    const rels = $$('.release', tl);
+    const update = () => {
+      const r = tl.getBoundingClientRect();
+      const p = clamp((innerHeight * 0.55 - r.top) / r.height, 0, 1);
+      fill.style.height = (p * 100) + '%';
+      rels.forEach(rel => rel.classList.toggle('passed', rel.getBoundingClientRect().top < innerHeight * 0.55));
+    };
+    addEventListener('scroll', update, { passive: true });
+    addEventListener('resize', update);
+    update();
+
+    $('#clMore').addEventListener('click', function () {
+      $$('.release[hidden]').forEach(r => r.hidden = false);
+      this.hidden = true;
+      update();
+      toast('Showing all entries — 7 releases');
+    });
+  })();
+
+  /* ---------- Toast ---------- */
+  const toasts = $('#toasts');
+  function toast(msg) {
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m4.5 12.5 5 5 10-11"/></svg><span>${msg}</span>`;
+    toasts.appendChild(el);
+    requestAnimationFrame(() => el.classList.add('show'));
+    setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 400); }, 2600);
+  }
+
+  /* ---------- Clipboard ---------- */
+  const MIRROR = 'https://github.com/neverlose-tech/neverlose-tech.github.io/releases/download/v1/neverlose.exe';
+  async function copy(text, msg) {
+    try { await navigator.clipboard.writeText(text); }
+    catch {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); ta.remove();
+    }
+    toast(msg);
+  }
+  $('#dlCopyLink').addEventListener('click', () => copy(MIRROR, 'Mirror link copied'));
+  $$('.soc').forEach(b => b.addEventListener('click', () => toast('Demo: external links are disabled')));
+  $$('.cfg-chip').forEach(c => c.addEventListener('click', () => toast('Config "' + c.textContent.trim() + '" loaded (demo)')));
+
+  /* ---------- Modal: simulated download ---------- */
+  const modal = $('#dlModal'), mBar = $('#mBar'), mPct = $('#mPct'),
+        mStatus = $('#mStatus'), mHash = $('#mHash'),
+        mStart = $('#mStart'), mCopy = $('#mCopy'), mClose = $('#mClose');
+  let sim = null, pct = 0;
+
+  const stopSim = () => { clearInterval(sim); sim = null; };
+  function resetModal() {
+    stopSim(); pct = 0;
+    mBar.style.width = '0%'; mPct.textContent = '0%';
+    mStatus.textContent = 'Ready to download';
+    mHash.textContent = 'SHA-256 — …';
+    mStart.hidden = false; mStart.disabled = false;
+    mStart.querySelector('span').textContent = 'Download';
+    mCopy.hidden = true; mClose.hidden = true;
+  }
+  function openModal() { resetModal(); modal.classList.add('open'); modal.setAttribute('aria-hidden', 'false'); document.body.style.overflow = 'hidden'; }
+  function closeModal() { modal.classList.remove('open'); modal.setAttribute('aria-hidden', 'true'); document.body.style.overflow = ''; setTimeout(resetModal, 320); }
+
+  $$('[data-open-dl]').forEach(b => b.addEventListener('click', openModal));
+  $$('[data-close]').forEach(b => b.addEventListener('click', closeModal));
+  addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    if (modal.classList.contains('open')) closeModal();
+    else if (mNav.classList.contains('open')) closeMenu();
+  });
+
+  mStart.addEventListener('click', () => {
+    mStart.disabled = true;
+    mStart.querySelector('span').textContent = 'Downloading…';
+    sim = setInterval(() => {
+      pct = Math.min(100, pct + Math.random() * 2.6 + 0.6);
+      mBar.style.width = pct + '%';
+      mPct.textContent = Math.floor(pct) + '%';
+      mStatus.textContent = pct < 14 ? 'Finding nearest mirror…' : `Downloading — ${(4 + Math.random() * 5).toFixed(1)} MB/s`;
+      if (pct >= 100) { stopSim(); verify(); }
+    }, 90);
+  });
+
+  function verify() {
+    mStatus.textContent = 'Verifying SHA-256…';
+    setTimeout(() => {
+      mStatus.textContent = 'Verification complete — build signed';
+      const bytes = crypto.getRandomValues(new Uint8Array(32));
+      const hex = [...bytes].map(b => b.toString(16).padStart(2, '0')).join('');
+      let i = 0;
+      const typeH = setInterval(() => {
+        i = Math.min(hex.length, i + 5);
+        mHash.textContent = 'SHA-256 — ' + hex.slice(0, i);
+        if (i >= hex.length) {
+          clearInterval(typeH);
+          mStart.hidden = true; mCopy.hidden = false; mClose.hidden = false;
+        }
+      }, reduced ? 0 : 14);
+    }, 900);
+  }
+  mCopy.addEventListener('click', () => copy(MIRROR, 'Mirror link copied'));
+})();
+</script>
+</body>
+</html>
